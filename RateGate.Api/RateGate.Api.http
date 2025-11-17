@@ -1,0 +1,6 @@
+@RateGate.Api_HostAddress = http://localhost:5294
+
+GET {{RateGate.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
