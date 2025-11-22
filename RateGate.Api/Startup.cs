@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using RateGate.Infrastructure.Data;
 
 namespace RateGate.Api
 {
@@ -18,8 +20,16 @@ namespace RateGate.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+
+            var connectionString = Configuration.GetConnectionString("RateGateDatabase");
+
+            services.AddDbContext<RateGateDbContext>(options =>
+            {
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -30,8 +40,6 @@ namespace RateGate.Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
-            app.UseHttpsRedirection();
 
             app.UseRouting();
 
