@@ -102,6 +102,42 @@ namespace RateGate.Infrastructure.Data
                     .HasForeignKey(p => p.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            var demoUserId = 1;
+            var demoApiKeyId = 1;
+            var demoPolicyId = 1;
+
+            modelBuilder.Entity<User>().HasData(new User
+            {
+                Id = demoUserId,
+                Name = "Demo Tenant",
+                Email = "demo@example.com",
+                Plan = "free",
+                CreatedAtUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            modelBuilder.Entity<ApiKey>().HasData(new ApiKey
+            {
+                Id = demoApiKeyId,
+                UserId = demoUserId,
+                Key = "demo-key-1",
+                IsActive = true,
+                CreatedAtUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                LastUsedAtUtc = null
+            });
+
+            modelBuilder.Entity<Policy>().HasData(new Policy
+            {
+                Id = demoPolicyId,
+                UserId = demoUserId,
+                Name = "Default demo policy",
+                EndpointPattern = "*",
+                Algorithm = RateLimitAlgorithm.TokenBucket,
+                Limit = 10,
+                WindowInSeconds = 10,
+                BurstLimit = 5,
+                CreatedAtUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
         }
     }
 }
