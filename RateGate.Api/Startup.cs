@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.VisualBasic;
+using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
+using RateGate.Infrastructure.Time;
 
 namespace RateGate.Api
 {
@@ -29,6 +32,18 @@ namespace RateGate.Api
             services.AddDbContext<RateGateDbContext>(options =>
             {
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            });
+
+            services.AddSingleton<ITimeProvider, SystemTimeProvider>();
+
+            services.AddSingleton<IRateLimiter>(sp =>
+            {
+                var timeProvider = sp.GetRequiredService<ITimeProvider>();
+                return new TokenBucketRateLimiter(
+                    capacity: 10,
+                    windowInSeconds: 10,
+                    timeProvider: timeProvider);
+                
             });
         }
 
