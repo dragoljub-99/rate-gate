@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RateGate.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using RateGate.Infrastructure.Data;
 namespace RateGate.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(RateGateDbContext))]
-    partial class RateGateDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201161756_UsageLog")]
+    partial class UsageLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

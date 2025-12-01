@@ -16,6 +16,8 @@ namespace RateGate.Infrastructure.Data
 
         public DbSet<Policy> Policies => Set<Policy>();
 
+        public DbSet<UsageLog> UsageLogs => Set<UsageLog>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -101,6 +103,30 @@ namespace RateGate.Infrastructure.Data
                     .WithMany(u => u.Policies)
                     .HasForeignKey(p => p.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UsageLog>(entity =>
+            {
+                entity.ToTable("usage_logs");
+
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Endpoint)
+                    .IsRequired()
+                    .HasMaxLength(400);
+
+                entity.Property(x => x.OccurredAtUtc)
+                    .IsRequired();
+
+                entity.Property(x => x.Cost)
+                    .IsRequired();
+
+                entity.HasOne(x => x.ApiKey)
+                    .WithMany()
+                    .HasForeignKey(x => x.ApiKeyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.ApiKeyId, x.Endpoint, x.OccurredAtUtc });
             });
 
             var demoUserId = 1;
