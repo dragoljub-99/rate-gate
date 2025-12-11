@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.VisualBasic;
 using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
+using RateGate.Infrastructure.RateLimiting;
 using RateGate.Infrastructure.Time;
 
 namespace RateGate.Api
@@ -43,7 +44,19 @@ namespace RateGate.Api
                     capacity: 10,
                     windowInSeconds: 10,
                     timeProvider: timeProvider);
-                
+
+            });
+
+            services.AddScoped<SlidingWindowLogRateLimiter>(sp =>
+            {
+                var dbContext = sp.GetRequiredService<RateGateDbContext>();
+                var timeProvider = sp.GetRequiredService<ITimeProvider>();
+
+                return new SlidingWindowLogRateLimiter(
+                    dbContext,
+                    timeProvider,
+                    limit: 10,
+                    windowInSeconds: 10);
             });
         }
 
