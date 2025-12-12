@@ -129,9 +129,11 @@ namespace RateGate.Infrastructure.Data
                 entity.HasIndex(x => new { x.ApiKeyId, x.Endpoint, x.OccurredAtUtc });
             });
 
+
             var demoUserId = 1;
             var demoApiKeyId = 1;
-            var demoPolicyId = 1;
+            var tokenBucketPolicyId = 1;
+            var slidingPolicyId = 2;
 
             modelBuilder.Entity<User>().HasData(new User
             {
@@ -154,14 +156,27 @@ namespace RateGate.Infrastructure.Data
 
             modelBuilder.Entity<Policy>().HasData(new Policy
             {
-                Id = demoPolicyId,
+                Id = tokenBucketPolicyId,
                 UserId = demoUserId,
-                Name = "Default demo policy",
+                Name = "Default demo policy (token bucket)",
                 EndpointPattern = "*",
                 Algorithm = RateLimitAlgorithm.TokenBucket,
                 Limit = 10,
                 WindowInSeconds = 10,
                 BurstLimit = 5,
+                CreatedAtUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            modelBuilder.Entity<Policy>().HasData(new Policy
+            {
+                Id = slidingPolicyId,
+                UserId = demoUserId,
+                Name = "Sliding window demo policy",
+                EndpointPattern = "/sliding-demo",
+                Algorithm = RateLimitAlgorithm.SlidingWindowLog,
+                Limit = 10,
+                WindowInSeconds = 10,
+                BurstLimit = null,
                 CreatedAtUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             });
         }

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.VisualBasic;
 using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
 using RateGate.Infrastructure.RateLimiting;
@@ -37,15 +36,17 @@ namespace RateGate.Api
 
             services.AddSingleton<ITimeProvider, SystemTimeProvider>();
 
-            services.AddSingleton<IRateLimiter>(sp =>
+            services.AddSingleton<TokenBucketRateLimiter>(sp =>
             {
                 var timeProvider = sp.GetRequiredService<ITimeProvider>();
                 return new TokenBucketRateLimiter(
                     capacity: 10,
                     windowInSeconds: 10,
                     timeProvider: timeProvider);
-
             });
+
+            services.AddSingleton<IRateLimiter>(sp =>
+                sp.GetRequiredService<TokenBucketRateLimiter>());
 
             services.AddScoped<SlidingWindowLogRateLimiter>(sp =>
             {
@@ -73,9 +74,9 @@ namespace RateGate.Api
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endPoints =>
+            app.UseEndpoints(endpoints =>
             {
-                endPoints.MapControllers();
+                endpoints.MapControllers();
             });
         }
     }

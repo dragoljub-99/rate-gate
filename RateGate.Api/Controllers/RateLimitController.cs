@@ -4,6 +4,7 @@ using RateGate.Api.Models;
 using RateGate.Domain.Entities;
 using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
+using RateGate.Infrastructure.RateLimiting;
 
 namespace RateGate.Api.Controllers
 {
@@ -12,12 +13,17 @@ namespace RateGate.Api.Controllers
     public class RateLimitController : ControllerBase
     {
         private readonly RateGateDbContext _dbContext;
-        private readonly IRateLimiter _rateLimiter;
+        private readonly TokenBucketRateLimiter _tokenBucketLimiter;
+        private readonly SlidingWindowLogRateLimiter _slidingWindowLimiter;
 
-        public RateLimitController(RateGateDbContext dbContext, IRateLimiter rateLimiter)
+        public RateLimitController(
+            RateGateDbContext dbContext,
+            TokenBucketRateLimiter tokenBucketLimiter,
+            SlidingWindowLogRateLimiter slidingWindowLimiter)
         {
             _dbContext = dbContext;
-            _rateLimiter = rateLimiter;
+            _tokenBucketLimiter = tokenBucketLimiter;
+            _slidingWindowLimiter = slidingWindowLimiter;
         }
 
         [HttpPost]
@@ -72,15 +78,6 @@ namespace RateGate.Api.Controllers
                     return Ok(RateLimitCheckResponseDto.FromDomain(result));
                 }
 
-                if (policy.Algorithm != RateLimitAlgorithm.TokenBucket)
-                {
-                    var result = RateLimitResult.Deny(
-                        RateLimitDecisionReason.InternalError,
-                        message: $"Rate limit algorithm '{policy.Algorithm}' is not supported yet.");
-
-                    return Ok(RateLimitCheckResponseDto.FromDomain(result));
-                }
-
                 var cost = requestDto.Cost ?? 1;
 
                 var rlRequest = new RateLimitRequest(
@@ -88,9 +85,27 @@ namespace RateGate.Api.Controllers
                     endpoint: requestDto.Endpoint,
                     cost: cost);
 
-                var rlResult = await _rateLimiter.CheckAsync(rlRequest, cancellationToken);
+                RateLimitResult rlResult;
+
+                switch (policy.Algorithm)
+                {
+                    case RateLimitAlgorithm.TokenBucket:
+                        rlResult = await _tokenBucketLimiter.CheckAsync(rlRequest, cancellationToken);
+                        break;
+
+                    case RateLimitAlgorithm.SlidingWindowLog:
+                        rlResult = await _slidingWindowLimiter.CheckAsync(rlRequest, cancellationToken);
+                        break;
+
+                    default:
+                        rlResult = RateLimitResult.Deny(
+                            RateLimitDecisionReason.InternalError,
+                            message: $"Rate limit algorithm '{policy.Algorithm}' is not supported.");
+                        break;
+                }
 
                 var responseDto = RateLimitCheckResponseDto.FromDomain(rlResult);
+
                 return Ok(responseDto);
             }
             catch (Exception ex)
@@ -102,6 +117,7 @@ namespace RateGate.Api.Controllers
                 return StatusCode(500, RateLimitCheckResponseDto.FromDomain(result));
             }
         }
+
         private static Policy? FindBestMatchingPolicy(IEnumerable<Policy> policies, string endpoint)
         {
             Policy? wildcardMatch = null;
