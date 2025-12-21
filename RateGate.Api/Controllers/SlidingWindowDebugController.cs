@@ -15,7 +15,7 @@ namespace RateGate.Api.Controllers
         {
             _rateLimiter = rateLimiter;
         }
-        
+
         [HttpPost("check")]
         public async Task<ActionResult<RateLimitCheckResponseDto>> Check(
             [FromBody] RateLimitCheckRequestDto requestDto,
@@ -34,10 +34,15 @@ namespace RateGate.Api.Controllers
 
             var cost = requestDto.Cost ?? 1;
 
+            var limit = 10;
+            var windowInSeconds = 10;
+
             var rlRequest = new RateLimitRequest(
                 apiKey: requestDto.ApiKey,
                 endpoint: requestDto.Endpoint,
-                cost: cost);
+                cost: cost,
+                limit: limit,
+                windowInSeconds: windowInSeconds);
 
             var result = await _rateLimiter.CheckAsync(rlRequest, cancellationToken);
 

@@ -52,11 +52,11 @@ namespace RateGate.Api.Controllers
 
                 if (apiKeyEntity == null || !apiKeyEntity.IsActive)
                 {
-                    var result = RateLimitResult.Deny(
+                    var invalidResult = RateLimitResult.Deny(
                         RateLimitDecisionReason.ApiKeyInvalidOrInactive,
                         message: "API key is invalid or inactive.");
 
-                    return Ok(RateLimitCheckResponseDto.FromDomain(result));
+                    return Ok(RateLimitCheckResponseDto.FromDomain(invalidResult));
                 }
 
                 var user = apiKeyEntity.User;
@@ -71,11 +71,11 @@ namespace RateGate.Api.Controllers
 
                 if (policy == null)
                 {
-                    var result = RateLimitResult.Deny(
+                    var noPolicyResult = RateLimitResult.Deny(
                         RateLimitDecisionReason.NoMatchingPolicy,
                         message: "No matching rate limit policy found for this endpoint.");
 
-                    return Ok(RateLimitCheckResponseDto.FromDomain(result));
+                    return Ok(RateLimitCheckResponseDto.FromDomain(noPolicyResult));
                 }
 
                 var cost = requestDto.Cost ?? 1;
@@ -83,7 +83,10 @@ namespace RateGate.Api.Controllers
                 var rlRequest = new RateLimitRequest(
                     apiKey: requestDto.ApiKey,
                     endpoint: requestDto.Endpoint,
-                    cost: cost);
+                    cost: cost,
+                    limit: policy.Limit,
+                    windowInSeconds: policy.WindowInSeconds,
+                    burstLimit: policy.BurstLimit);
 
                 RateLimitResult rlResult;
 

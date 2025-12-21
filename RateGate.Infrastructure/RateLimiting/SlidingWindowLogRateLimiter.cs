@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using RateGate.Domain.Entities;
 using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
 
@@ -9,30 +8,13 @@ namespace RateGate.Infrastructure.RateLimiting
     {
         private readonly RateGateDbContext _dbContext;
         private readonly ITimeProvider _timeProvider;
-        private readonly int _limit;
-        private readonly int _windowInSeconds;
 
         public SlidingWindowLogRateLimiter(
             RateGateDbContext dbContext,
-            ITimeProvider timeProvider,
-            int limit,
-            int windowInSeconds)
+            ITimeProvider timeProvider)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
-
-            if (limit <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be positive.");
-            }
-
-            if (windowInSeconds <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(windowInSeconds), "Window must be positive.");
-            }
-
-            _limit = limit;
-            _windowInSeconds = windowInSeconds;
         }
 
         public async Task<RateLimitResult> CheckAsync(
@@ -57,7 +39,7 @@ namespace RateGate.Infrastructure.RateLimiting
 
                 var apiKeyId = apiKeyEntity.Id;
 
-                var windowStart = now.AddSeconds(-_windowInSeconds);
+                var windowStart = now.AddSeconds(-request.WindowInSeconds);
 
                 var usedCost = await _dbContext.UsageLogs
                     .Where(l =>
@@ -69,7 +51,7 @@ namespace RateGate.Infrastructure.RateLimiting
                 var used = usedCost ?? 0;
 
                 var totalIfAllowed = used + request.Cost;
-                if (totalIfAllowed > _limit)
+                if (totalIfAllowed > request.Limit)
                 {
                     var oldestInWindow = await _dbContext.UsageLogs
                         .Where(l =>
@@ -83,7 +65,7 @@ namespace RateGate.Infrastructure.RateLimiting
 
                     if (oldestInWindow != null)
                     {
-                        var expiry = oldestInWindow.OccurredAtUtc.AddSeconds(_windowInSeconds);
+                        var expiry = oldestInWindow.OccurredAtUtc.AddSeconds(request.WindowInSeconds);
                         var wait = expiry - now;
                         if (wait > TimeSpan.Zero)
                         {
@@ -91,7 +73,7 @@ namespace RateGate.Infrastructure.RateLimiting
                         }
                     }
 
-                    var remaining = Math.Max(0, _limit - used);
+                    var remaining = Math.Max(0, request.Limit - used);
 
                     return RateLimitResult.Deny(
                         RateLimitDecisionReason.LimitExceeded,
@@ -100,7 +82,7 @@ namespace RateGate.Infrastructure.RateLimiting
                         message: "Sliding window limit exceeded.");
                 }
 
-                var log = new UsageLog
+                var log = new Domain.Entities.UsageLog
                 {
                     ApiKeyId = apiKeyId,
                     Endpoint = request.Endpoint,
@@ -111,7 +93,7 @@ namespace RateGate.Infrastructure.RateLimiting
                 _dbContext.UsageLogs.Add(log);
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
-                var remainingAfter = _limit - totalIfAllowed;
+                var remainingAfter = request.Limit - totalIfAllowed;
 
                 return RateLimitResult.Allow(
                     remaining: remainingAfter,

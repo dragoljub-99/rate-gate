@@ -39,10 +39,7 @@ namespace RateGate.Api
             services.AddSingleton<TokenBucketRateLimiter>(sp =>
             {
                 var timeProvider = sp.GetRequiredService<ITimeProvider>();
-                return new TokenBucketRateLimiter(
-                    capacity: 10,
-                    windowInSeconds: 10,
-                    timeProvider: timeProvider);
+                return new TokenBucketRateLimiter(timeProvider);
             });
 
             services.AddSingleton<IRateLimiter>(sp =>
@@ -53,11 +50,7 @@ namespace RateGate.Api
                 var dbContext = sp.GetRequiredService<RateGateDbContext>();
                 var timeProvider = sp.GetRequiredService<ITimeProvider>();
 
-                return new SlidingWindowLogRateLimiter(
-                    dbContext,
-                    timeProvider,
-                    limit: 10,
-                    windowInSeconds: 10);
+                return new SlidingWindowLogRateLimiter(dbContext, timeProvider);
             });
         }
 

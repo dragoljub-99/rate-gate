@@ -4,8 +4,6 @@ namespace RateGate.Domain.RateLimiting
 {
     public class TokenBucketRateLimiter : IRateLimiter
     {
-        private readonly int _capacity;
-        private readonly double _refillTokensPerSecond;
         private readonly ITimeProvider _timeProvider;
 
         private readonly ConcurrentDictionary<string, TokenBucketState> _buckets = new();
@@ -17,20 +15,8 @@ namespace RateGate.Domain.RateLimiting
             public readonly object SyncRoot = new();
         }
 
-        public TokenBucketRateLimiter(int capacity, int windowInSeconds, ITimeProvider timeProvider)
+        public TokenBucketRateLimiter(ITimeProvider timeProvider)
         {
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be positive.");
-            }
-
-            if (windowInSeconds <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(windowInSeconds), "Window must be positive.");
-            }
-
-            _capacity = capacity;
-            _refillTokensPerSecond = (double)capacity / windowInSeconds;
             _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         }
 
@@ -38,15 +24,17 @@ namespace RateGate.Domain.RateLimiting
             RateLimitRequest request,
             CancellationToken cancellationToken = default)
         {
-
             var now = _timeProvider.UtcNow;
+
+            var capacity = request.Limit; 
+            var windowInSeconds = request.WindowInSeconds;
 
             var bucketKey = $"{request.ApiKey}:{request.Endpoint}";
 
             var state = _buckets.GetOrAdd(bucketKey, _ =>
                 new TokenBucketState
                 {
-                    Tokens = _capacity,
+                    Tokens = capacity,
                     LastRefillUtc = now
                 });
 
@@ -55,10 +43,17 @@ namespace RateGate.Domain.RateLimiting
             lock (state.SyncRoot)
             {
                 var elapsedSeconds = (now - state.LastRefillUtc).TotalSeconds;
-                if (elapsedSeconds > 0 && _refillTokensPerSecond > 0)
+
+                if (elapsedSeconds > 0)
                 {
-                    var refill = elapsedSeconds * _refillTokensPerSecond;
-                    state.Tokens = Math.Min(_capacity, state.Tokens + refill);
+                    var refillTokensPerSecond = (double)capacity / windowInSeconds;
+
+                    if (refillTokensPerSecond > 0)
+                    {
+                        var refill = elapsedSeconds * refillTokensPerSecond;
+                        state.Tokens = Math.Min(capacity, state.Tokens + refill);
+                    }
+
                     state.LastRefillUtc = now;
                 }
 
@@ -73,12 +68,13 @@ namespace RateGate.Domain.RateLimiting
                 }
                 else
                 {
+                    var refillTokensPerSecond = (double)capacity / windowInSeconds;
                     var missingTokens = request.Cost - state.Tokens;
                     int? retryAfterMs = null;
 
-                    if (_refillTokensPerSecond > 0)
+                    if (refillTokensPerSecond > 0)
                     {
-                        var secondsToWait = missingTokens / _refillTokensPerSecond;
+                        var secondsToWait = missingTokens / refillTokensPerSecond;
                         retryAfterMs = (int)Math.Ceiling(secondsToWait * 1000);
                     }
 
