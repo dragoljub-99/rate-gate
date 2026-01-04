@@ -84,6 +84,43 @@ namespace RateGate.Api.Controllers
             return Ok(dto);
         }
 
+        [HttpPost]
+        public async Task<ActionResult<AdminUserDto>> Create(
+            [FromBody] AdminUserCreateDto dto,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var now = DateTime.UtcNow;
+
+            var user = new Domain.Entities.User
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                Plan = dto.Plan,
+                CreatedAtUtc = now
+            };
+
+            _dbContext.Users.Add(user);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            var result = new AdminUserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Plan = user.Plan,
+                CreatedAtUtc = user.CreatedAtUtc,
+                ApiKeysCount = 0,
+                PoliciesCount = 0
+            };
+
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, result);
+        }
+
         [HttpGet("{id:int}/apikeys")]
         public async Task<ActionResult<IEnumerable<AdminApiKeyDto>>> GetApiKeysForUser(int id, CancellationToken cancellationToken)
         {

@@ -8,6 +8,7 @@ using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
 using RateGate.Infrastructure.RateLimiting;
 using RateGate.Infrastructure.Time;
+using System.Text.Json.Serialization;
 
 namespace RateGate.Api
 {
@@ -22,7 +23,12 @@ namespace RateGate.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services
+                .AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
 
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
