@@ -23,6 +23,7 @@ namespace RateGate.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
+
             services
                 .AddControllers()
                 .AddJsonOptions(options =>
@@ -32,6 +33,21 @@ namespace RateGate.Api
 
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+
+            services.AddCors(options =>
+{
+         options.AddPolicy("FrontendDev", policy =>
+        {
+            policy
+                .WithOrigins(
+               "http://127.0.0.1:5000",
+               "http://localhost:5000"
+           )
+           .AllowAnyHeader()
+           .AllowAnyMethod();
+        });
+     });
+
 
             var connectionString = Configuration.GetConnectionString("RateGateDatabase");
 
@@ -68,8 +84,10 @@ namespace RateGate.Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseStaticFiles();
             app.UseRouting();
+
+            app.UseCors("FrontendDev");
 
             app.UseAuthorization();
 

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RateGate Admin Panel (Vanilla JS)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">RG</div>
+      <div>
+        <div class="title">RateGate Admin</div>
+        <div class="subtitle">Plain HTML + CSS + JavaScript (no frameworks)</div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button id="btnPing" class="btn">Ping /health</button>
+      <button id="btnDbPing" class="btn">Ping /health/db</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <button class="nav-item is-active" data-page="users">Users</button>
+      <button class="nav-item" data-page="apikeys">API Keys</button>
+      <button class="nav-item" data-page="policies">Policies</button>
+      <button class="nav-item" data-page="metrics">Metrics</button>
+      <button class="nav-item" data-page="check">Try /check</button>
+
+      <div class="sidebar-footer">
+        <div class="small muted">
+          Tip: keep this panel served from the same origin as the API to avoid CORS.
+        </div>
+      </div>
+    </nav>
+
+    <main class="content">
+      <section class="status">
+        <div id="statusLine" class="status-line muted">Ready.</div>
+      </section>
+
+      <section id="page-users" class="page"></section>
+      <section id="page-apikeys" class="page hidden"></section>
+      <section id="page-policies" class="page hidden"></section>
+      <section id="page-metrics" class="page hidden"></section>
+      <section id="page-check" class="page hidden"></section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div class="small muted">
+      RateGate Admin Panel — built for teaching and interviews. No frameworks. No build step.
+    </div>
+  </footer>
+
+  <script src="admin.js" defer></script>
+</body>
+</html>

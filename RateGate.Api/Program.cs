@@ -11,7 +11,7 @@ namespace RateGate.Api
         public static void Main(string[] args)
         {
             var host = CreateHostBuilder(args).Build();
-
+            
             using (var scope = host.Services.CreateScope())
             {
                  var dbContext = scope.ServiceProvider.GetRequiredService<RateGateDbContext>();
