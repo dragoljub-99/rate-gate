@@ -1,0 +1,33 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: rategate-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rategate_root_pw
+      MYSQL_DATABASE: rategate_db
+      MYSQL_USER: rategate_user
+      MYSQL_PASSWORD: rategate_pw
+    volumes:
+      - rategate_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -prategate_root_pw --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  api:
+    image: rategate-api:v1.0.0
+    container_name: rategate-api
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5000
+      ConnectionStrings__RateGateDatabase: "server=mysql;port=3306;database=rategate_db;user=rategate_user;password=rategate_pw;TreatTinyAsBoolean=true;"
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+volumes:
+  rategate_mysql_data:

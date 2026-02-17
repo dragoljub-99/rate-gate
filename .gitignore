@@ -7,3 +7,9 @@ obj/
 .idea/
 *.DotSettings.user
 *.DS_Store
+**/*.tar
+**/*.tar.gz
+DockerWithNoOtherDependencies/**/*.zip
+DockerWithNoOtherDependencies/**/images/
+RateGate-Docker-Offline-Bundle-*.zip
+

@@ -35,18 +35,18 @@ namespace RateGate.Api
             services.AddSwaggerGen();
 
             services.AddCors(options =>
-{
-         options.AddPolicy("FrontendDev", policy =>
         {
-            policy
-                .WithOrigins(
-               "http://127.0.0.1:5000",
-               "http://localhost:5000"
-           )
-           .AllowAnyHeader()
-           .AllowAnyMethod();
+            options.AddPolicy("FrontendDev", policy =>
+           {
+               policy
+                   .WithOrigins(
+                  "http://127.0.0.1:5000",
+                  "http://localhost:5000"
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+           });
         });
-     });
 
 
             var connectionString = Configuration.GetConnectionString("RateGateDatabase");
