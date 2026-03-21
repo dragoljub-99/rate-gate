@@ -1,4 +1,6 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
+using RateGate.Domain.Entities;
 using RateGate.Domain.RateLimiting;
 using RateGate.Infrastructure.Data;
 
@@ -8,6 +10,8 @@ namespace RateGate.Infrastructure.RateLimiting
     {
         private readonly RateGateDbContext _dbContext;
         private readonly ITimeProvider _timeProvider;
+
+        private const int MaxRetries = 3;
 
         public SlidingWindowLogRateLimiter(
             RateGateDbContext dbContext,
@@ -21,90 +25,102 @@ namespace RateGate.Infrastructure.RateLimiting
             RateLimitRequest request,
             CancellationToken cancellationToken = default)
         {
-            var now = _timeProvider.UtcNow;
-
-            try
+            for (int attempt = 1; attempt <= MaxRetries; attempt++)
             {
-                var apiKeyEntity = await _dbContext.ApiKeys
-                    .FirstOrDefaultAsync(
-                        k => k.Key == request.ApiKey,
-                        cancellationToken);
-
-                if (apiKeyEntity is null || !apiKeyEntity.IsActive)
+                try
                 {
-                    return RateLimitResult.Deny(
-                        RateLimitDecisionReason.ApiKeyInvalidOrInactive,
-                        message: "API key is invalid or inactive (sliding window).");
-                }
+                    var now = _timeProvider.UtcNow;
+                    var windowStart = now.AddSeconds(-request.WindowInSeconds);
 
-                var apiKeyId = apiKeyEntity.Id;
+                    await using var transaction =
+                        await _dbContext.Database.BeginTransactionAsync(
+                            IsolationLevel.Serializable,
+                            cancellationToken);
 
-                var windowStart = now.AddSeconds(-request.WindowInSeconds);
+                    var apiKey = await _dbContext.ApiKeys
+                        .FirstOrDefaultAsync(k => k.Key == request.ApiKey, cancellationToken);
 
-                var usedCost = await _dbContext.UsageLogs
-                    .Where(l =>
-                        l.ApiKeyId == apiKeyId &&
-                        l.Endpoint == request.Endpoint &&
-                        l.OccurredAtUtc >= windowStart)
-                    .SumAsync(l => (int?)l.Cost, cancellationToken);
-
-                var used = usedCost ?? 0;
-
-                var totalIfAllowed = used + request.Cost;
-                if (totalIfAllowed > request.Limit)
-                {
-                    var oldestInWindow = await _dbContext.UsageLogs
-                        .Where(l =>
-                            l.ApiKeyId == apiKeyId &&
-                            l.Endpoint == request.Endpoint &&
-                            l.OccurredAtUtc >= windowStart)
-                        .OrderBy(l => l.OccurredAtUtc)
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    int? retryAfterMs = null;
-
-                    if (oldestInWindow != null)
+                    if (apiKey == null || !apiKey.IsActive)
                     {
-                        var expiry = oldestInWindow.OccurredAtUtc.AddSeconds(request.WindowInSeconds);
-                        var wait = expiry - now;
-                        if (wait > TimeSpan.Zero)
-                        {
-                            retryAfterMs = (int)Math.Ceiling(wait.TotalMilliseconds);
-                        }
+                        await transaction.RollbackAsync(cancellationToken);
+
+                        return RateLimitResult.Deny(
+                            RateLimitDecisionReason.ApiKeyInvalidOrInactive,
+                            message: "API key invalid or inactive.");
                     }
 
-                    var remaining = Math.Max(0, request.Limit - used);
+                    var used = await _dbContext.UsageLogs
+                        .Where(l =>
+                            l.ApiKeyId == apiKey.Id &&
+                            l.Endpoint == request.Endpoint &&
+                            l.OccurredAtUtc >= windowStart)
+                        .SumAsync(l => (int?)l.Cost ?? 0, cancellationToken);
 
-                    return RateLimitResult.Deny(
-                        RateLimitDecisionReason.LimitExceeded,
-                        retryAfterMs: retryAfterMs,
-                        remaining: remaining,
-                        message: "Sliding window limit exceeded.");
+                    var totalIfAllowed = used + request.Cost;
+
+                    if (totalIfAllowed > request.Limit)
+                    {
+                        var oldestInWindow = await _dbContext.UsageLogs
+                            .Where(l =>
+                                l.ApiKeyId == apiKey.Id &&
+                                l.Endpoint == request.Endpoint &&
+                                l.OccurredAtUtc >= windowStart)
+                            .OrderBy(l => l.OccurredAtUtc)
+                            .FirstOrDefaultAsync(cancellationToken);
+
+                        int? retryAfterMs = null;
+
+                        if (oldestInWindow != null)
+                        {
+                            var expiry = oldestInWindow.OccurredAtUtc
+                                .AddSeconds(request.WindowInSeconds);
+
+                            var wait = expiry - now;
+                            if (wait > TimeSpan.Zero)
+                                retryAfterMs = (int)Math.Ceiling(wait.TotalMilliseconds);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
+
+                        return RateLimitResult.Deny(
+                            RateLimitDecisionReason.LimitExceeded,
+                            retryAfterMs,
+                            request.Limit - used,
+                            "Sliding window limit exceeded.");
+                    }
+
+                    _dbContext.UsageLogs.Add(new UsageLog
+                    {
+                        ApiKeyId = apiKey.Id,
+                        Endpoint = request.Endpoint,
+                        OccurredAtUtc = now,
+                        Cost = request.Cost
+                    });
+
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    return RateLimitResult.Allow(
+                        request.Limit - totalIfAllowed,
+                        "Request allowed by sliding window.");
                 }
-
-                var log = new Domain.Entities.UsageLog
+                catch (DbUpdateException) when (attempt < MaxRetries)
                 {
-                    ApiKeyId = apiKeyId,
-                    Endpoint = request.Endpoint,
-                    OccurredAtUtc = now,
-                    Cost = request.Cost
-                };
-
-                _dbContext.UsageLogs.Add(log);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                var remainingAfter = request.Limit - totalIfAllowed;
-
-                return RateLimitResult.Allow(
-                    remaining: remainingAfter,
-                    message: "Request allowed by sliding window log.");
+                    _dbContext.ChangeTracker.Clear();
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    return RateLimitResult.Deny(
+                        RateLimitDecisionReason.InternalError,
+                        message: $"Sliding window failed: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                return RateLimitResult.Deny(
-                    RateLimitDecisionReason.InternalError,
-                    message: $"Sliding window evaluation failed: {ex.Message}");
-            }
+
+            return RateLimitResult.Deny(
+                RateLimitDecisionReason.InternalError,
+                message: "Sliding window failed after retries.");
         }
     }
 }
