@@ -59,6 +59,7 @@ namespace RateGate.Api
             });
             
             services.AddScoped<IRateLimitDecisionService, RateLimitDecisionService>();
+            services.AddSingleton<IPolicyResolver, PolicyResolver>();
             services.AddSingleton<ITimeProvider, SystemTimeProvider>();
 
             services.AddSingleton<TokenBucketRateLimiter>(sp =>

@@ -1,6 +1,6 @@
 # RateGate
 
-RateGate is a .NET 8 rate limiting project that evaluates incoming requests based on API key, endpoint, and policy. It supports both Token Bucket and Sliding Window Log algorithms through a single decision endpoint.
+Backend API for evaluating incoming requests by API key, endpoint, and configured ratelimiting policy
 
 ## How to download and test
 

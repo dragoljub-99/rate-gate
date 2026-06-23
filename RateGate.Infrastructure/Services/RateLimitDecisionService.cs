@@ -12,14 +12,17 @@ namespace RateGate.Infrastructure.Services
         private readonly RateGateDbContext _dbContext;
         private readonly TokenBucketRateLimiter _tokenBucket;
         private readonly SlidingWindowLogRateLimiter _slidingWindow;
+        private readonly IPolicyResolver _policyResolver;
 
         public RateLimitDecisionService(RateGateDbContext dbContext,
                                         TokenBucketRateLimiter tokenBucket, 
-                                        SlidingWindowLogRateLimiter slidingWindow)
+                                        SlidingWindowLogRateLimiter slidingWindow,
+                                        IPolicyResolver policyResolver)
         {
             _dbContext = dbContext;
             _tokenBucket = tokenBucket;
             _slidingWindow = slidingWindow;
+            _policyResolver = policyResolver;
         }
 
         public async Task<RateLimitResult> EvaluateAsync(string apiKey, string endpoint,
@@ -45,7 +48,7 @@ namespace RateGate.Infrastructure.Services
                            .Where(p => p.UserId == user.Id)
                            .ToListAsync(cancellationToken);
 
-            var policy = FindBestMatchingPolicy(policies, endpoint);
+            var policy = _policyResolver.FindBestMatch(policies, endpoint);
 
             if (policy is null)
             {
