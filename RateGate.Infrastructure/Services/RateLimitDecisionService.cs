@@ -69,61 +69,32 @@ namespace RateGate.Infrastructure.Services
                     burstLimit: policy.BurstLimit);
 
 
-            RateLimitResult rlResult;
+            RateLimitResult rlResult = await ExecuteLimiterAsync(rlRequest, policy.Algorithm, cancellationToken);
 
-            switch (policy.Algorithm)
-            {
-                case RateLimitAlgorithm.TokenBucket:
-                     rlResult = await _tokenBucket.CheckAsync(rlRequest, cancellationToken);
-                     break;
-                
-                case RateLimitAlgorithm.SlidingWindowLog:
-                     rlResult = await _slidingWindow.CheckAsync(rlRequest, cancellationToken);
-                     break;
-
-                default:
-                     rlResult = RateLimitResult.Deny(RateLimitDecisionReason.InternalError,
-                     message: $"Rate limit algorithm '{policy.Algorithm}' is not supported.");
-                     break; 
-            }
 
             return rlResult;
         }
 
-        private static Policy? FindBestMatchingPolicy(IEnumerable<Policy> policies, string endpoint)
+        private async Task<RateLimitResult> ExecuteLimiterAsync(RateLimitRequest rlRequest, RateLimitAlgorithm algorithm,
+                                                               CancellationToken cancellationToken)
         {
-            Policy? wildcardMatch = null;
-            Policy? prefixMatch = null;
-            Policy? exactMatch = null;
+            RateLimitResult rlResult;
 
-            foreach (var policy in policies)
+            switch (algorithm)
             {
-                var pattern = policy.EndpointPattern;
-
-                if (pattern == "*")
-                {
-                    wildcardMatch ??= policy;
-                    continue;
-                }
-
-                if (pattern.EndsWith("/*", StringComparison.Ordinal))
-                {
-                    var prefix = pattern.Substring(0, pattern.Length - 1); 
-                    if (endpoint.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                    {
-                        prefixMatch ??= policy;
-                    }
-
-                    continue;
-                }
-
-                if (string.Equals(pattern, endpoint, StringComparison.OrdinalIgnoreCase))
-                {
-                    exactMatch ??= policy;
-                }
+                case RateLimitAlgorithm.TokenBucket:
+                     rlResult = await _tokenBucket.CheckAsync(rlRequest, cancellationToken);
+                     break;
+                case RateLimitAlgorithm.SlidingWindowLog:
+                     rlResult = await _slidingWindow.CheckAsync(rlRequest, cancellationToken);
+                     break;
+                default:
+                    rlResult = RateLimitResult.Deny(RateLimitDecisionReason.InternalError,
+                    message: $"Rate limit algorithm {algorithm} is not suported");
+                    break;
             }
 
-            return exactMatch ?? prefixMatch ?? wildcardMatch;
+            return rlResult;
         }
     }
 }
