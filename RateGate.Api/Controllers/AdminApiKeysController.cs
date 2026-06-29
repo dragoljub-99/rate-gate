@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
+using RateGate.Api.Services.Admin;
 using RateGate.Infrastructure.Data;
 
 namespace RateGate.Api.Controllers
@@ -11,11 +12,11 @@ namespace RateGate.Api.Controllers
     [Route("admin/apikeys")]
     public class AdminApiKeysController : ControllerBase
     {
-        private readonly RateGateDbContext _dbContext;
+        private readonly AdminApiKeysService _adminApiKeysService;
 
-        public AdminApiKeysController(RateGateDbContext dbContext)
+        public AdminApiKeysController(AdminApiKeysService adminApiKeysService)
         {
-            _dbContext = dbContext;
+            _adminApiKeysService = adminApiKeysService;
         }
 
         [HttpPost]
@@ -27,137 +28,60 @@ namespace RateGate.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
+            
+            var result = await _adminApiKeysService.CreateAsync(dto, cancellationToken);
 
-            var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Id == dto.UserId, cancellationToken);
-
-            if (user == null)
+            if (result.apiKey == null)
             {
-                return BadRequest($"User with id {dto.UserId} does not exist.");
+                return BadRequest(new
+                {
+                    message = $"{result.errorMessage}"
+                });
             }
-
-            var key = string.IsNullOrWhiteSpace(dto.Key)
-                ? GenerateApiKey()
-                : dto.Key.Trim();
-
-            var isActive = dto.IsActive ?? true;
-            var now = DateTime.UtcNow;
-
-            var apiKey = new Domain.Entities.ApiKey
-            {
-                UserId = dto.UserId,
-                Key = key,
-                IsActive = isActive,
-                CreatedAtUtc = now,
-                LastUsedAtUtc = null
-            };
-
-            _dbContext.ApiKeys.Add(apiKey);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            var result = new AdminApiKeyDto
-            {
-                Id = apiKey.Id,
-                Key = apiKey.Key,
-                IsActive = apiKey.IsActive,
-                CreatedAtUtc = apiKey.CreatedAtUtc,
-                LastUsedAtUtc = apiKey.LastUsedAtUtc,
-                UserId = apiKey.UserId
-            };
 
             return CreatedAtAction(
                 nameof(GetById),
-                new { id = apiKey.Id },
-                result);
+                new { id = result.apiKey.Id },
+                result.apiKey);
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<AdminApiKeyDto>> GetById(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto?>> GetById(int id, CancellationToken cancellationToken)
         {
-            var apiKey = await _dbContext.ApiKeys
-                .FirstOrDefaultAsync(k => k.Id == id, cancellationToken);
+
+            var apiKey = await _adminApiKeysService.GetByIdAsync(id, cancellationToken);
 
             if (apiKey == null)
             {
                 return NotFound();
             }
 
-            var result = new AdminApiKeyDto
-            {
-                Id = apiKey.Id,
-                Key = apiKey.Key,
-                IsActive = apiKey.IsActive,
-                CreatedAtUtc = apiKey.CreatedAtUtc,
-                LastUsedAtUtc = apiKey.LastUsedAtUtc,
-                UserId = apiKey.UserId
-            };
-
-            return Ok(result);
+            return Ok(apiKey);
         }
 
         [HttpPost("{id:int}/activate")]
-        public async Task<ActionResult<AdminApiKeyDto>> Activate(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto?>> Activate(int id, CancellationToken cancellationToken)
         {
-            var apiKey = await _dbContext.ApiKeys
-                .FirstOrDefaultAsync(k => k.Id == id, cancellationToken);
+            var result = await _adminApiKeysService.ActivateAsync(id, cancellationToken);
 
-            if (apiKey == null)
+            if (result is null)
             {
                 return NotFound();
             }
-
-            apiKey.IsActive = true;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            var result = new AdminApiKeyDto
-            {
-                Id = apiKey.Id,
-                Key = apiKey.Key,
-                IsActive = apiKey.IsActive,
-                CreatedAtUtc = apiKey.CreatedAtUtc,
-                LastUsedAtUtc = apiKey.LastUsedAtUtc,
-                UserId = apiKey.UserId
-            };
 
             return Ok(result);
         }
 
         [HttpPost("{id:int}/deactivate")]
-        public async Task<ActionResult<AdminApiKeyDto>> Deactivate(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto?>> Deactivate(int id, CancellationToken cancellationToken)
         {
-            var apiKey = await _dbContext.ApiKeys
-                .FirstOrDefaultAsync(k => k.Id == id, cancellationToken);
+           var result = await _adminApiKeysService.DeactivateAsync(id, cancellationToken);
 
-            if (apiKey == null)
+           if (result is null)
             {
                 return NotFound();
             }
-
-            apiKey.IsActive = false;
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            var result = new AdminApiKeyDto
-            {
-                Id = apiKey.Id,
-                Key = apiKey.Key,
-                IsActive = apiKey.IsActive,
-                CreatedAtUtc = apiKey.CreatedAtUtc,
-                LastUsedAtUtc = apiKey.LastUsedAtUtc,
-                UserId = apiKey.UserId
-            };
-
             return Ok(result);
-        }
-
-        private static string GenerateApiKey()
-        {
-            var bytes = RandomNumberGenerator.GetBytes(32);
-            var sb = new StringBuilder(bytes.Length * 2);
-            foreach (var b in bytes)
-            {
-                sb.Append(b.ToString("x2"));
-            }
-            return sb.ToString();
         }
     }
 }

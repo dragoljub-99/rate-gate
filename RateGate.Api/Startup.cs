@@ -11,6 +11,7 @@ using RateGate.Infrastructure.RateLimiting;
 using RateGate.Infrastructure.Time;
 using System.Text.Json.Serialization;
 using RateGate.Infrastructure.Services;
+using RateGate.Api.Services.Admin;
 
 namespace RateGate.Api
 {
@@ -46,6 +47,8 @@ namespace RateGate.Api
             services.AddScoped<IRateLimitDecisionService, RateLimitDecisionService>();
             services.AddSingleton<IPolicyResolver, PolicyResolver>();
             services.AddSingleton<ITimeProvider, SystemTimeProvider>();
+
+            services.AddScoped<AdminApiKeysService>();
 
             services.AddSingleton<TokenBucketRateLimiter>(sp =>
             {
