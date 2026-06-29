@@ -49,6 +49,7 @@ namespace RateGate.Api
             services.AddSingleton<ITimeProvider, SystemTimeProvider>();
 
             services.AddScoped<AdminApiKeysService>();
+            services.AddScoped<AdminPoliciesService>();
 
             services.AddSingleton<TokenBucketRateLimiter>(sp =>
             {

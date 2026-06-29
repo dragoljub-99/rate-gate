@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
 using RateGate.Domain.Entities;
 using RateGate.Infrastructure.Data;
+using RateGate.Api.Services;
+using RateGate.Api.Services.Admin;
 
 namespace RateGate.Api.Controllers
 {
@@ -10,61 +12,31 @@ namespace RateGate.Api.Controllers
     [Route("admin/policies")]
     public class AdminPoliciesController : ControllerBase
     {
-        private readonly RateGateDbContext _dbContext;
+        private readonly AdminPoliciesService _adminPoliciesService;
 
-        public AdminPoliciesController(RateGateDbContext dbContext)
+        public AdminPoliciesController(AdminPoliciesService adminPoliciesService)
         {
-            _dbContext = dbContext;
+            _adminPoliciesService = adminPoliciesService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AdminPolicyDto>>> GetAll(CancellationToken cancellationToken)
-        {
-            var policies = await _dbContext.Policies
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            var result = policies.Select(p => new AdminPolicyDto
-            {
-                Id = p.Id,
-                UserId = p.UserId,
-                Name = p.Name,
-                EndpointPattern = p.EndpointPattern,
-                Algorithm = p.Algorithm,
-                Limit = p.Limit,
-                WindowInSeconds = p.WindowInSeconds,
-                BurstLimit = p.BurstLimit,
-                CreatedAtUtc = p.CreatedAtUtc
-            });
-
-            return Ok(result);
+        public async Task<ActionResult<IEnumerable<AdminPolicyDto?>>> GetAll(CancellationToken cancellationToken)
+        {            
+            var policies = await _adminPoliciesService.GetAllAsync(cancellationToken);
+             
+            return Ok(policies);
         }
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<AdminPolicyDto>> GetById(int id, CancellationToken cancellationToken)
         {
-            var policy = await _dbContext.Policies
-                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            var policy = await _adminPoliciesService.GetByIdAsync(id, cancellationToken);
 
-            if (policy == null)
+            if (policy is null)
             {
                 return NotFound();
             }
-
-            var result = new AdminPolicyDto
-            {
-                Id = policy.Id,
-                UserId = policy.UserId,
-                Name = policy.Name,
-                EndpointPattern = policy.EndpointPattern,
-                Algorithm = policy.Algorithm,
-                Limit = policy.Limit,
-                WindowInSeconds = policy.WindowInSeconds,
-                BurstLimit = policy.BurstLimit,
-                CreatedAtUtc = policy.CreatedAtUtc
-            };
-
-            return Ok(result);
+            return Ok(policy);
         }
 
         [HttpPost]
@@ -77,45 +49,19 @@ namespace RateGate.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var userExists = await _dbContext.Users
-                .AnyAsync(u => u.Id == dto.UserId, cancellationToken);
+            var policy = await _adminPoliciesService.CreateAsync(dto, cancellationToken);
 
-            if (!userExists)
+            if (policy.adminPolicyDto is null)
             {
-                return BadRequest($"User with id {dto.UserId} does not exist.");
+                return BadRequest(new
+                {
+                    message = $"{policy.errorMessage}"
+                });
             }
 
-            var now = DateTime.UtcNow;
-
-            var policy = new Policy
-            {
-                UserId = dto.UserId,
-                Name = dto.Name,
-                EndpointPattern = dto.EndpointPattern,
-                Algorithm = dto.Algorithm,
-                Limit = dto.Limit,
-                WindowInSeconds = dto.WindowInSeconds,
-                BurstLimit = dto.BurstLimit,
-                CreatedAtUtc = now
-            };
-
-            _dbContext.Policies.Add(policy);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            var result = new AdminPolicyDto
-            {
-                Id = policy.Id,
-                UserId = policy.UserId,
-                Name = policy.Name,
-                EndpointPattern = policy.EndpointPattern,
-                Algorithm = policy.Algorithm,
-                Limit = policy.Limit,
-                WindowInSeconds = policy.WindowInSeconds,
-                BurstLimit = policy.BurstLimit,
-                CreatedAtUtc = policy.CreatedAtUtc
-            };
-
-            return CreatedAtAction(nameof(GetById), new { id = policy.Id }, result);
+            return CreatedAtAction(nameof(GetById),
+                                   new { id = policy.adminPolicyDto.Id }, 
+                                   policy.adminPolicyDto);
         }
 
         [HttpPut("{id:int}")]
@@ -129,52 +75,25 @@ namespace RateGate.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var policy = await _dbContext.Policies
-                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            var policy = await _adminPoliciesService.UpdateAsync(id, dto, cancellationToken);
 
-            if (policy == null)
+            if (policy is null)
             {
                 return NotFound();
             }
 
-            policy.Name = dto.Name;
-            policy.EndpointPattern = dto.EndpointPattern;
-            policy.Algorithm = dto.Algorithm;
-            policy.Limit = dto.Limit;
-            policy.WindowInSeconds = dto.WindowInSeconds;
-            policy.BurstLimit = dto.BurstLimit;
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            var result = new AdminPolicyDto
-            {
-                Id = policy.Id,
-                UserId = policy.UserId,
-                Name = policy.Name,
-                EndpointPattern = policy.EndpointPattern,
-                Algorithm = policy.Algorithm,
-                Limit = policy.Limit,
-                WindowInSeconds = policy.WindowInSeconds,
-                BurstLimit = policy.BurstLimit,
-                CreatedAtUtc = policy.CreatedAtUtc
-            };
-
-            return Ok(result);
+            return Ok(policy);
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var policy = await _dbContext.Policies
-                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            var isDelete = await _adminPoliciesService.DeleteAsync(id, cancellationToken);
 
-            if (policy == null)
+            if (!isDelete)
             {
                 return NotFound();
             }
-
-            _dbContext.Policies.Remove(policy);
-            await _dbContext.SaveChangesAsync(cancellationToken);
 
             return NoContent();
         }
