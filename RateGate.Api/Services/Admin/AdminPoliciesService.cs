@@ -57,8 +57,8 @@ namespace RateGate.Api.Services.Admin
         public async Task<(AdminPolicyDto? adminPolicyDto, string? errorMessage)> CreateAsync(AdminPolicyCreateDto dto, 
                                                                              CancellationToken cancellationToken)
         {
-            bool userExists = await _dbContext.Policies
-                                              .AnyAsync(p => p.UserId == dto.UserId, cancellationToken);
+            bool userExists = await _dbContext.Users
+                                              .AnyAsync(u => u.Id == dto.UserId, cancellationToken);
 
             if (!userExists)
             {
