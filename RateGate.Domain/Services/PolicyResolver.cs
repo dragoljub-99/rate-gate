@@ -1,6 +1,5 @@
 using RateGate.Domain.Entities;
 using RateGate.Domain.Abstractions;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace RateGate.Infrastructure.Services
 {
