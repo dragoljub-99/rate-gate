@@ -24,7 +24,7 @@ namespace RateGate.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<AdminUserDetailsDto>?> GetById(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminUserDetailsDto>> GetById(int id, CancellationToken cancellationToken)
         {
           
             var user = await _adminUsersService.GetByIdAsync(id, cancellationToken);

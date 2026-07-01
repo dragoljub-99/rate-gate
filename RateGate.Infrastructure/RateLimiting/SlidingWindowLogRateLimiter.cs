@@ -60,24 +60,36 @@ namespace RateGate.Infrastructure.RateLimiting
 
                     if (totalIfAllowed > request.Limit)
                     {
-                        var oldestInWindow = await _dbContext.UsageLogs
+                        var requiredCostToExpire = totalIfAllowed - request.Limit;
+
+                        var logsInWindow = await _dbContext.UsageLogs
                             .Where(l =>
                                 l.ApiKeyId == apiKey.Id &&
                                 l.Endpoint == request.Endpoint &&
                                 l.OccurredAtUtc >= windowStart)
                             .OrderBy(l => l.OccurredAtUtc)
-                            .FirstOrDefaultAsync(cancellationToken);
-
+                            .ToListAsync(cancellationToken);
+                        
+                        var expiredCost = 0;
                         int? retryAfterMs = null;
 
-                        if (oldestInWindow != null)
+                        foreach (var log in logsInWindow)
                         {
-                            var expiry = oldestInWindow.OccurredAtUtc
-                                .AddSeconds(request.WindowInSeconds);
+                            expiredCost += log.Cost;
 
-                            var wait = expiry - now;
-                            if (wait > TimeSpan.Zero)
-                                retryAfterMs = (int)Math.Ceiling(wait.TotalMilliseconds);
+                            if (expiredCost >= requiredCostToExpire)
+                            {
+                                var expiry = log.OccurredAtUtc.AddSeconds(request.WindowInSeconds);
+
+                                var wait = expiry - now;
+
+                                if (wait > TimeSpan.Zero)
+                                {
+                                    retryAfterMs = (int)Math.Ceiling(wait.TotalMilliseconds);
+                                }
+
+                                break;
+                            }
                         }
 
                         await transaction.CommitAsync(cancellationToken);
