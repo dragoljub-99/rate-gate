@@ -29,6 +29,16 @@ namespace RateGate.Domain.RateLimiting
             var capacity = request.Limit; 
             var windowInSeconds = request.WindowInSeconds;
 
+            if (request.Cost > capacity)
+            {
+                return Task.FromResult(RateLimitResult.Deny(
+                                       RateLimitDecisionReason.LimitExceeded,
+                                       retryAfterMs: null, 
+                                       remaining: null,
+                                       message: "Request cost exceeds the token bucket capacity"
+                ));
+            }
+
             var bucketKey = $"{request.ApiKey}:{request.Endpoint}";
 
             var state = _buckets.GetOrAdd(bucketKey, _ =>
