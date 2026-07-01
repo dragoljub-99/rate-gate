@@ -26,8 +26,8 @@ namespace RateGate.Domain.RateLimiting
         {
             var now = _timeProvider.UtcNow;
 
-            var capacity = request.Limit; 
-            var windowInSeconds = request.WindowInSeconds;
+            var capacity = request.BurstLimit ?? request.Limit;
+            var refillTokensPerSecond = (double)request.Limit / request.WindowInSeconds;
 
             if (request.Cost > capacity)
             {
@@ -56,7 +56,6 @@ namespace RateGate.Domain.RateLimiting
 
                 if (elapsedSeconds > 0)
                 {
-                    var refillTokensPerSecond = (double)capacity / windowInSeconds;
 
                     if (refillTokensPerSecond > 0)
                     {
@@ -78,15 +77,12 @@ namespace RateGate.Domain.RateLimiting
                 }
                 else
                 {
-                    var refillTokensPerSecond = (double)capacity / windowInSeconds;
                     var missingTokens = request.Cost - state.Tokens;
                     int? retryAfterMs = null;
 
-                    if (refillTokensPerSecond > 0)
-                    {
                         var secondsToWait = missingTokens / refillTokensPerSecond;
                         retryAfterMs = (int)Math.Ceiling(secondsToWait * 1000);
-                    }
+                    
 
                     var remainingApprox = (int)Math.Floor(Math.Max(0, state.Tokens));
 
