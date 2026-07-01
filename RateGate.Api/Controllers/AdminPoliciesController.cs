@@ -16,7 +16,7 @@ namespace RateGate.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AdminPolicyDto?>>> GetAll(CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<AdminPolicyDto>>> GetAll(CancellationToken cancellationToken)
         {            
             var policies = await _adminPoliciesService.GetAllAsync(cancellationToken);
              

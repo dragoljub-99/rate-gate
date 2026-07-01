@@ -1,5 +1,6 @@
 using RateGate.Domain.Entities;
 using RateGate.Domain.Abstractions;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace RateGate.Infrastructure.Services
 {
@@ -8,37 +9,40 @@ namespace RateGate.Infrastructure.Services
         public Policy? FindBestMatch(IEnumerable<Policy> policies, string endpoint)
         {
              Policy? wildCardMatch = null;
-             Policy? prefixMatch = null;
-             Policy? exactMatch = null;
+             Policy? bestPrefixMatch = null;
+             var longestPrefixLength = 0;
 
              foreach (var policy in policies)
             {
                 var pattern = policy.EndpointPattern;
 
-                if (pattern == "*")
+                if (string.Equals(pattern, endpoint, StringComparison.OrdinalIgnoreCase))
                 {
-                    wildCardMatch ??= policy;
-                    continue;
+                    return policy;
                 }
 
-                if (pattern.EndsWith("/*", StringComparison.Ordinal))
+                if (pattern.EndsWith("*/", StringComparison.Ordinal))
                 {
                     var prefix = pattern.Substring(0, pattern.Length - 1);
-                    if (endpoint.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+
+                    if (endpoint.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                                            prefix.Length > longestPrefixLength)
                     {
-                        prefixMatch ??= policy;
+                        bestPrefixMatch = policy;
+                        longestPrefixLength = prefix.Length;
                     }
 
                     continue;
                 }
 
-                if (string.Equals(pattern, endpoint, StringComparison.OrdinalIgnoreCase))
+                if (endpoint == "*")
                 {
-                    exactMatch ??= policy;                   
+                    wildCardMatch ??= policy;
                 }
             }
 
-            return exactMatch ?? prefixMatch ?? wildCardMatch;
+            return bestPrefixMatch ?? wildCardMatch;
+                
         }
        
 

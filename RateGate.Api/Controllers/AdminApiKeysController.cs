@@ -42,7 +42,7 @@ namespace RateGate.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<AdminApiKeyDto?>> GetById(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto>> GetById(int id, CancellationToken cancellationToken)
         {
 
             var apiKey = await _adminApiKeysService.GetByIdAsync(id, cancellationToken);
@@ -56,7 +56,7 @@ namespace RateGate.Api.Controllers
         }
 
         [HttpPost("{id:int}/activate")]
-        public async Task<ActionResult<AdminApiKeyDto?>> Activate(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto>> Activate(int id, CancellationToken cancellationToken)
         {
             var result = await _adminApiKeysService.ActivateAsync(id, cancellationToken);
 
@@ -69,7 +69,7 @@ namespace RateGate.Api.Controllers
         }
 
         [HttpPost("{id:int}/deactivate")]
-        public async Task<ActionResult<AdminApiKeyDto?>> Deactivate(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<AdminApiKeyDto>> Deactivate(int id, CancellationToken cancellationToken)
         {
            var result = await _adminApiKeysService.DeactivateAsync(id, cancellationToken);
 

@@ -3,7 +3,6 @@ using RateGate.Infrastructure.Data;
 using RateGate.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
-using Microsoft.AspNetCore.DataProtection.KeyManagement.Internal;
 
 namespace RateGate.Api.Services.Admin
 {
@@ -125,6 +124,7 @@ namespace RateGate.Api.Services.Admin
                 Key = k.Key,
                 IsActive = k.IsActive,
                 CreatedAtUtc = k.CreatedAtUtc,
+                LastUsedAtUtc = k.LastUsedAtUtc,
                 UserId = k.UserId
             });
 
