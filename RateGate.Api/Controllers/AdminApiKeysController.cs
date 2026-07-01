@@ -1,10 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
 using RateGate.Api.Services.Admin;
-using RateGate.Infrastructure.Data;
 
 namespace RateGate.Api.Controllers
 {

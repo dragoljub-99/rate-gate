@@ -105,6 +105,10 @@ namespace RateGate.Infrastructure.RateLimiting
                         request.Limit - totalIfAllowed,
                         "Request allowed by sliding window.");
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (DbUpdateException) when (attempt < MaxRetries)
                 {
                     _dbContext.ChangeTracker.Clear();

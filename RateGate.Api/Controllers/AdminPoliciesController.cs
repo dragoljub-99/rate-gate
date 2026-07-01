@@ -1,9 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
-using RateGate.Domain.Entities;
-using RateGate.Infrastructure.Data;
-using RateGate.Api.Services;
 using RateGate.Api.Services.Admin;
 
 namespace RateGate.Api.Controllers

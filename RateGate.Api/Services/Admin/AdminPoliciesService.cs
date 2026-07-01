@@ -1,7 +1,5 @@
 using RateGate.Domain.RateLimiting;
-using RateGate.Infrastructure;
 using RateGate.Infrastructure.Data;
-using RateGate.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
 using RateGate.Domain.Entities;

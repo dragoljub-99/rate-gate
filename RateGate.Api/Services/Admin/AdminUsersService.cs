@@ -95,6 +95,7 @@ namespace RateGate.Api.Services.Admin
             {
                 Id = user.Id,
                 Name = user.Name,
+                Email = user.Email,
                 Plan = user.Plan,
                 CreatedAtUtc = user.CreatedAtUtc,
                 ApiKeysCount = 0,

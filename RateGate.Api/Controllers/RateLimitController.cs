@@ -41,7 +41,12 @@ namespace RateGate.Api.Controllers
                                                                            requestDto.Cost, cancellationToken);
 
               var dto = RateLimitCheckResponseDto.FromDomain(result);
-
+              
+              if (result.Reason == RateLimitDecisionReason.InternalError)
+                {
+                    return StatusCode(500, dto);
+                }
+                
               return Ok(dto);
             }
             catch (Exception ex)

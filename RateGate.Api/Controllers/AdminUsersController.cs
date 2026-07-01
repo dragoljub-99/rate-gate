@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using RateGate.Api.Models.Admin;
 using RateGate.Api.Services.Admin;
-using RateGate.Infrastructure.Data;
 
 namespace RateGate.Api.Controllers
 {
@@ -57,17 +55,27 @@ namespace RateGate.Api.Controllers
         [HttpGet("{id:int}/apikeys")]
         public async Task<ActionResult<IEnumerable<AdminApiKeyDto>>> GetApiKeysForUser(int id, CancellationToken cancellationToken)
         {
-           var apiKeys = await _adminUsersService.GetApiKeysForUserAsync(id, cancellationToken);
+           var result = await _adminUsersService.GetApiKeysForUserAsync(id, cancellationToken);
 
-            return Ok(apiKeys);
+            if (result is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
 
         [HttpGet("{id:int}/policies")]
         public async Task<ActionResult<IEnumerable<AdminPolicyDto>>> GetPoliciesForUser(int id, CancellationToken cancellationToken)
         {
-            var policies = await _adminUsersService.GetPoliciesForUserAsync(id, cancellationToken);
+            var result = await _adminUsersService.GetPoliciesForUserAsync(id, cancellationToken);
 
-            return Ok(policies);
+            if (result is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
     }
 }
