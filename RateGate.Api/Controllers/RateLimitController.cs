@@ -46,8 +46,12 @@ namespace RateGate.Api.Controllers
                 {
                     return StatusCode(500, dto);
                 }
-                
+
               return Ok(dto);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

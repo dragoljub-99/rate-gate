@@ -13,22 +13,25 @@ namespace RateGate.Infrastructure.Services
         private readonly TokenBucketRateLimiter _tokenBucket;
         private readonly SlidingWindowLogRateLimiter _slidingWindow;
         private readonly IPolicyResolver _policyResolver;
+        private readonly ITimeProvider _timeProvider;
 
         public RateLimitDecisionService(RateGateDbContext dbContext,
                                         TokenBucketRateLimiter tokenBucket, 
                                         SlidingWindowLogRateLimiter slidingWindow,
-                                        IPolicyResolver policyResolver)
+                                        IPolicyResolver policyResolver,
+                                        ITimeProvider timeProvider)
         {
             _dbContext = dbContext;
             _tokenBucket = tokenBucket;
             _slidingWindow = slidingWindow;
             _policyResolver = policyResolver;
+            _timeProvider = timeProvider;
         }
 
         public async Task<RateLimitResult> EvaluateAsync(string apiKey, string endpoint,
                                                          int? cost, CancellationToken cancellationToken)
         {
-            var apiKeyEntity = await _dbContext.ApiKeys.AsNoTracking()
+            var apiKeyEntity = await _dbContext.ApiKeys
                     .Include(k => k.User)
                     .FirstOrDefaultAsync(
                         k => k.Key == apiKey,
@@ -42,6 +45,9 @@ namespace RateGate.Infrastructure.Services
                 return invalidResult;
             }
 
+            apiKeyEntity.LastUsedAtUtc = _timeProvider.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            
             var user = apiKeyEntity.User;
 
             var policies = await _dbContext.Policies.AsNoTracking()

@@ -58,9 +58,6 @@ namespace RateGate.Api
                 return new TokenBucketRateLimiter(timeProvider);
             });
 
-            services.AddSingleton<IRateLimiter>(sp =>
-                sp.GetRequiredService<TokenBucketRateLimiter>());
-
             services.AddScoped<SlidingWindowLogRateLimiter>(sp =>
             {
                 var dbContext = sp.GetRequiredService<RateGateDbContext>();
