@@ -51,6 +51,7 @@ namespace RateGate.Api
             services.AddScoped<AdminApiKeysService>();
             services.AddScoped<AdminPoliciesService>();
             services.AddScoped<AdminUsersService>();
+            services.AddScoped<AdminMetricsService>();
 
             services.AddSingleton<TokenBucketRateLimiter>(sp =>
             {

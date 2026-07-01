@@ -38,6 +38,7 @@ namespace RateGate.Api.Services.Admin
         {
             return await _dbContext.Users
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(u => u.Id == id)
                 .Select(u => new AdminUserDetailsDto
                 {
