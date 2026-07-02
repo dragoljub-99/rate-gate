@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateGate.Infrastructure", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateGate.ConsoleDemo", "RateGate.ConsoleDemo\RateGate.ConsoleDemo.csproj", "{473A3583-B921-43D5-B223-E5280B441B3B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateGate.Tests", "RateGate.Tests\RateGate.Tests.csproj", "{1256B8E7-7BF7-4671-9550-5F0F21556E1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{473A3583-B921-43D5-B223-E5280B441B3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{473A3583-B921-43D5-B223-E5280B441B3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{473A3583-B921-43D5-B223-E5280B441B3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1256B8E7-7BF7-4671-9550-5F0F21556E1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1256B8E7-7BF7-4671-9550-5F0F21556E1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1256B8E7-7BF7-4671-9550-5F0F21556E1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1256B8E7-7BF7-4671-9550-5F0F21556E1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
