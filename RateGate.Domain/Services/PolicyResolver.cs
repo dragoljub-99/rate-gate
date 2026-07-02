@@ -1,7 +1,7 @@
 using RateGate.Domain.Entities;
 using RateGate.Domain.Abstractions;
 
-namespace RateGate.Infrastructure.Services
+namespace RateGate.Domain.Services
 {
     public class PolicyResolver : IPolicyResolver
     {
@@ -20,7 +20,7 @@ namespace RateGate.Infrastructure.Services
                     return policy;
                 }
 
-                if (pattern.EndsWith("*/", StringComparison.Ordinal))
+                if (pattern.EndsWith("/*", StringComparison.Ordinal))
                 {
                     var prefix = pattern.Substring(0, pattern.Length - 1);
 
@@ -34,7 +34,7 @@ namespace RateGate.Infrastructure.Services
                     continue;
                 }
 
-                if (endpoint == "*")
+                if (pattern == "*")
                 {
                     wildCardMatch ??= policy;
                 }

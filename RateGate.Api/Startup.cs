@@ -12,6 +12,7 @@ using RateGate.Infrastructure.Time;
 using System.Text.Json.Serialization;
 using RateGate.Infrastructure.Services;
 using RateGate.Api.Services.Admin;
+using RateGate.Domain.Services;
 
 namespace RateGate.Api
 {
