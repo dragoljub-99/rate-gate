@@ -20,7 +20,7 @@ Steps:
 Use `RUN.bat` to start the containers again and `STOP.bat` to stop them.
 `RESET.bat` stops the containers and deletes the MySQL data volume.
 
-The docker bundle runs the API and MySQL locally. You do not need to install MySQL or configure the database manually.
+The docker bundle runs the API and MySQL locally. You do not need to install .NET SDK, install MySQL or configure the database manually to review the project through Docker.
 
 ## Test the API
 
@@ -67,7 +67,7 @@ dotnet test RateGate.sln
 
 ## What this project demonstrates
 
-This project was built as a backend portfolio project to demonstrate REST API design, rate-limiting algorithms, persistence with EF Core/MySQL, Dockerized local setup, Swagger documentation and automated testing.
+This project was built as a backend portfolio project to demonstrate REST API design, rate-limiting algorithms, persistence with EF Core/MySQL, Docker based local setup, Swagger/OpenAPI documentation and automated testing.
 
 ## About the project
 
@@ -75,7 +75,7 @@ RateGate exposes a single decision endpoint that validates an API key, resolves 
 
 The project implements **Token Bucket** and **Sliding Window Log** algorithms. Token Bucket state is managed in memory, while Sliding Window Log usage is stored in MySQL through Entity Framework Core.
 
-The solution separates API, domain logic, persistence, console demonstration, and automated tests. It also includes admin endpoints for managing users, API keys, policies, and usage metrics.
+The solution separates API, domain logic, persistence, console demonstration, and automated tests. It also includes basic admin endpoints for managing users, API keys, policies, and usage metrics.
 
 Unit and integration tests cover request validation, policy resolution, Token Bucket behavior, and Sliding Window Log persistence.
 
