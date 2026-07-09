@@ -1,21 +1,42 @@
 # RateGate
 
-Backend API for evaluating incoming requests by API key, endpoint, and configured ratelimiting policy
+Backend API for evaluating incoming requests by API key, endpoint, and configured rate-limiting policy.
 
-## How to download and test
+## Download and run
 
-1. Download **RateGate-Docker-Offline-Bundle-v1.0.1.zip** from the GitHub **Releases** section.
-2. Extract it anywhere on Windows 10/11.
+Requirements:
+
+* Windows 10 or Windows 11
+* Docker Desktop
+
+Steps:
+
+1. Download the latest `RateGate-Docker-Offline-Bundle-*.zip` from the GitHub **Releases** section.
+2. Extract the archive.
 3. Start Docker Desktop.
 4. Run `RUN_FIRST_TIME.bat`.
-5. Send requests to the API at `http://localhost:5000`.
+5. Open Swagger at `http://localhost:5000/swagger`.
 
-Recommended test flow:
-- Check service status with `GET /health`
-- Check database connectivity with `GET /health/db`
-- Test the main decision endpoint with `POST /check`
+Use `RUN.bat` to start the containers again and `STOP.bat` to stop them.
+`RESET.bat` stops the containers and deletes the MySQL data volume.
 
-Example request for Sliding Window Log:
+The docker bundle runs the API and MySQL locally. You do not need to install MySQL or configure the database manually.
+
+## Test the API
+
+Check the service and database:
+
+* `GET /health`
+* `GET /health/db`
+
+Test the main decision endpoint:
+
+```http
+POST /check
+Content-Type: application/json
+```
+
+Sliding Window Log example:
 
 ```json
 {
@@ -25,7 +46,7 @@ Example request for Sliding Window Log:
 }
 ```
 
-Example request for Token Bucket:
+Token Bucket example:
 
 ```json
 {
@@ -35,14 +56,27 @@ Example request for Token Bucket:
 }
 ```
 
-Postman is the recommended tool for testing these requests. Swagger is also available at `http://localhost:5000/swagger` for quick inspection of the API.
+Repeat the requests quickly to observe allowed and denied decisions. Requests can be tested through Swagger or Postman.
+A successful request returns `"allow": true`. After enough repeated requests the API returns `"allow": false` with rate limit information.
 
-The project can also be run manually in Visual Studio for development purposes.
+Run the automated tests from the source repository:
+
+```bash
+dotnet test RateGate.sln
+```
+
+## What this project demonstrates
+
+This project was built as a backend portfolio project to demonstrate REST API design, rate-limiting algorithms, persistence with EF Core/MySQL, Dockerized local setup, Swagger documentation and automated testing.
 
 ## About the project
 
-The solution is split into `RateGate.Api`, `RateGate.Domain`, `RateGate.Infrastructure`, and `RateGate.ConsoleDemo`. The API exposes the main `/check` endpoint plus health, debug, and admin endpoints.
+RateGate exposes a single decision endpoint that validates an API key, resolves the best matching policy for the requested endpoint, and applies the configured rate-limiting algorithm.
 
-`RateGate.Domain` contains the core rate limiting models and the Token Bucket implementation. `RateGate.Infrastructure` contains EF Core, MySQL persistence, DbContext, migrations, and the Sliding Window Log implementation. `RateGate.Api` wires everything together, resolves the best matching policy for the requested endpoint, and returns the final allow/deny decision.
+The project implements **Token Bucket** and **Sliding Window Log** algorithms. Token Bucket state is managed in memory, while Sliding Window Log usage is stored in MySQL through Entity Framework Core.
 
-The system evaluates each request by finding the best matching policy for the target endpoint and applying the configured rate limiting algorithm.
+The solution separates API, domain logic, persistence, console demonstration, and automated tests. It also includes admin endpoints for managing users, API keys, policies, and usage metrics.
+
+Unit and integration tests cover request validation, policy resolution, Token Bucket behavior, and Sliding Window Log persistence.
+
+**Technologies:** .NET 8, ASP.NET Core, Entity Framework Core, MySQL, xUnit, Docker and Swagger.
