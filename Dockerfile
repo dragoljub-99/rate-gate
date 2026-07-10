@@ -6,6 +6,7 @@ COPY RateGate.Api/RateGate.Api.csproj RateGate.Api/
 COPY RateGate.Domain/RateGate.Domain.csproj RateGate.Domain/
 COPY RateGate.Infrastructure/RateGate.Infrastructure.csproj RateGate.Infrastructure/
 COPY RateGate.ConsoleDemo/RateGate.ConsoleDemo.csproj RateGate.ConsoleDemo/
+COPY RateGate.Tests/RateGate.Tests.csproj RateGate.Tests/
 
 RUN dotnet restore RateGate.sln
 

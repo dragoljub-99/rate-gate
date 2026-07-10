@@ -16,7 +16,7 @@ services:
       retries: 30
 
   api:
-    image: rategate-api:v1.0.1
+    image: rategate-api:v1.0.2
     container_name: rategate-api
     depends_on:
       mysql:

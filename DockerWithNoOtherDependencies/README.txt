@@ -1,10 +1,5 @@
 RateGate - Offline Docker Bundle (Windows 10/11)
 
-IMPORTANT: Download the ZIP first
-1) Go to the GitHub repository "Releases" section.
-2) Download: RateGate-Docker-Offline-Bundle-v1.0.0.zip
-3) Unzip it anywhere (e.g., Desktop).
-
 What you need:
 - Windows 10 or Windows 11
 - Docker Desktop installed and running

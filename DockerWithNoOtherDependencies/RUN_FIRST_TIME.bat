@@ -1,3 +1,4 @@
+
 @echo off
 setlocal
 
@@ -14,7 +15,7 @@ REM Ensure we are in the bundle folder
 cd /d "%~dp0"
 
 echo [1/2] Loading Docker images...
-docker load -i "%cd%\images\rategate-api_v1.0.1.tar"
+docker load -i "%cd%\images\rategate-api_v1.0.2.tar"
 if errorlevel 1 (
   echo ERROR: Failed to load rategate-api image.
   exit /b 1
@@ -44,5 +45,8 @@ echo.
 echo Seeded apiKey: demo-key-1
 echo Try POST /check with endpoint /sliding-demo or /demo
 echo.
+echo.
+pause
 
 endlocal
+

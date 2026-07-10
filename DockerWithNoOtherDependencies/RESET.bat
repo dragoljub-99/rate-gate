@@ -7,5 +7,6 @@ pause
 
 docker compose down -v
 echo Done.
+pause
 
 endlocal
